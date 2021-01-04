@@ -12,8 +12,8 @@ from plaid import Client, errors
 import datetime
 import os
 
-os.environ['PLAID_CLIENT_ID'] = '5fe70a6fdf1def0013986f26'
-os.environ['PLAID_SECRET'] = '6d09259b55bd88f1bf7a9349653f17'
+os.environ['PLAID_CLIENT_ID'] = 'dummyXYZ'
+os.environ['PLAID_SECRET'] = 'dummyXYZ'
 os.environ['PLAID_PRODUCTS'] = 'transactions'
 os.environ['PLAID_COUNTRY_CODES'] = 'US'
 os.environ['PLAID_ENV'] = 'sandbox'
