@@ -1,0 +1,13 @@
+<h1>Welcome {{user}}</h1>
+<a id="link-btn" href="{% url 'create_link_token'%}">Create Link Token</a>
+<br/>
+<a id="link-btn" href="{% url 'get_account_info'%}">Get Account Info</a>
+<br />
+<a id="link-btn" href="{% url 'fetch_transactions'%}">Fetch Transactions</a>
+<br />
+<a id="link-btn" href="{% url 'logout'%}">Logout</a>
+{% csrf_token %}
+
+<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.3/jquery.min.js"></script>
+<script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
+<button id="link-button">Link Account</button> -->
