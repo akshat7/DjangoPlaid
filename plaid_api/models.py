@@ -22,5 +22,3 @@ class Transaction(models.Model):
     date = models.DateField()
     name = models.CharField(max_length=100)
     pending = models.BooleanField()
-
-

@@ -1,17 +1,20 @@
 from django.shortcuts import render
 
 # Create your views here.
+import os
+import datetime
 from django.contrib.auth import login, authenticate
 from django.contrib.auth.forms import UserCreationForm
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from plaid import errors
 from .models import PlaidItem, UserAccount, Transaction
 from .tasks import fetch_transactions_from_plaid, get_plaid_client
-from plaid import errors
-import datetime
-import os
+from .serializers import TransactionSerializer
 
 
 def signup(request):
@@ -98,28 +101,32 @@ def set_access_token(request):
 
 
 @login_required(login_url='/login/')
+@api_view()
 def get_transaction_from_db(request):
     client = get_plaid_client()
     item = PlaidItem.objects.filter(user=request.user)
-    if item.count() > 0:
-        access_token = item.values('access_token')[0]['access_token']
-
-        start_date = '{:%Y-%m-%d}'.format(
-            datetime.datetime.now() + datetime.timedelta(-730))
-        end_date = '{:%Y-%m-%d}'.format(datetime.datetime.now())
-
-        try:
-            transactions_response = client.Transactions.get(
-                access_token, start_date, end_date)
-        except errors.PlaidError as e:
-            return HttpResponse("HTTP_400_BAD_REQUEST")
-
-        return JsonResponse(transactions_response['transactions'], safe=False)
-    else:
-        return HttpResponse("No Data Exists for the User")
+    print(item[0])
+    
+    print("Getting Accounts")
+    accounts = UserAccount.objects.filter(item=item[0])
+    print(accounts)
+    
+    print("Getting Transactions")
+    transactions = []
+    
+    for account in accounts:
+        transaction = Transaction.objects.filter(account=account)
+        for t in transaction:
+            transactions.append(t)
+    print(len(transactions))
+    print("Getting Serialized Data")
+    transaction_serializer = TransactionSerializer(transactions, many=True)
+    print(transaction_serializer.data)
+    return Response(transaction_serializer.data)
 
 
 @login_required(login_url='/login/')
+@api_view()
 def get_account_info(request):
     client = get_plaid_client()
     item = PlaidItem.objects.filter(user=request.user)
@@ -130,6 +137,6 @@ def get_account_info(request):
         except errors.PlaidError as e:
             return HttpResponse("HTTP_400_BAD_REQUEST")
 
-        return JsonResponse(accounts_response)
+        return Response(accounts_response)
     else:
         return HttpResponse("No Data Exists for the User")
