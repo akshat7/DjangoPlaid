@@ -9,11 +9,12 @@ from django.shortcuts import render, redirect
 from django.http import HttpResponse, JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from plaid import errors
 from .models import PlaidItem, UserAccount, Transaction
-from .tasks import fetch_transactions_from_plaid, get_plaid_client
+from .tasks import fetch_transactions_from_plaid, get_plaid_client, delete_transactions
 from .serializers import TransactionSerializer
 
 
@@ -51,7 +52,10 @@ def create_link_token(request):
             'ins_109508',
             [
                 'transactions'
-            ]
+            ],
+            {
+                "webhook":"http://c5f7faa175fe.ngrok.io/webhook/",
+            }
         )
 
         publicToken = res['public_token']
@@ -75,8 +79,8 @@ def create_link_token(request):
 
         print("Fetching initial Transactions and Account Details")
 
-        fetch_transactions_from_plaid.delay(access_token)
-        # fetch_transactions_from_plaid(access_token)
+        # fetch_transactions_from_plaid.delay(access_token)
+        fetch_transactions_from_plaid(access_token)
         print("Asyn task called, returning success now")
         return render(request, 'success.html')
     else:
@@ -140,3 +144,37 @@ def get_account_info(request):
         return Response(accounts_response)
     else:
         return HttpResponse("No Data Exists for the User")
+
+@csrf_exempt
+def webhook(request):
+    request_data = request.POST
+    print("Webhook received")
+    print(request.POST)
+    webhook_type = request_data.get('webhook_type')
+    webhook_code = request_data.get('webhook_code')
+    print(webhook_type)
+
+    if webhook_type == 'TRANSACTIONS':
+        item_id = request_data.get('item_id')
+        if webhook_code == 'TRANSACTIONS_REMOVED':
+            removed_transactions = request_data.get('removed_transactions')
+            # delete_transactions.delay(item_id, removed_transactions)
+            delete_transactions(item_id, removed_transactions)
+
+        else:
+            new_transactions = request_data.get('new_transactions')
+            # fetch_transactions.delay(None, item_id, new_transactions)
+            fetch_transactions(None, item_id, new_transactions)
+
+    # return HttpResponse('Webhook received', status=status.HTTP_202_ACCEPTED)
+    return HttpResponse('Webhook received')
+
+@login_required(login_url='/login/')
+def test_webhook(request):
+    client = get_plaid_client()
+    item = PlaidItem.objects.filter(user=request.user)
+    access_token = item.values('access_token')[0]['access_token']
+    print(access_token)
+    # fire a DEFAULT_UPDATE webhook for an item
+    client.Sandbox.item.fire_webhook(access_token, 'DEFAULT_UPDATE')
+    return HttpResponse('Testing Webhook')

@@ -26,7 +26,7 @@ SECRET_KEY = 'cea@$pdcc*ddj_yvv$298ac%xqnn#r0vz9q0)zc+9radm_-64#'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["c5f7faa175fe.ngrok.io", "127.0.0.1"]
 
 
 # Application definition

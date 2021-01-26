@@ -27,6 +27,11 @@ def get_plaid_client():
 
 
 @shared_task
+def delete_transactions(item_id, removed_transactions):
+    for transaction in removed_transactions:
+        Transaction.objects.filter(transaction_id=transaction).delete()
+
+@shared_task
 def fetch_transactions_from_plaid(access_token, item_id=None, new_transactions=500):
     client = get_plaid_client()
     # access_token = PlaidItem.objects.filter(item_id=item_id)[0].access_token
